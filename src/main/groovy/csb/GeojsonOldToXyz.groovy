@@ -9,15 +9,19 @@ import groovy.json.JsonParserType
  */
 class GeojsonOldToXyz {
 
-    public static int translate( String filename ) {
+
+    public static int transform( String path, String fileNm ) {
         def tokens = []
         def pts = []
         def ids = []
 
-        def sb = new StringBuffer( )
+        def sb = new StringBuffer()
 
+        def file = new File( "${path}/${fileNm}" )
+        // Add missing json characters to close features list and close json
+        //file << "\n        ]\n}"
 
-        def jsonStr = new File( filename ).text
+        def jsonStr = file.text
         def jsonSlurper = new JsonSlurper().setType(JsonParserType.CHARACTER_SOURCE)
         def json = jsonSlurper.parseText( jsonStr )
         def coords = []
@@ -29,7 +33,8 @@ class GeojsonOldToXyz {
         println "${properties.size()}:${features.size()}"
 
         //write out metajson
-        def metaFile = new File( '/tmp/test_meta.json' )
+        def newFileNm = fileNm - ".geojson"
+        def metaFile = new File( "${path}/${newFileNm}_meta.json" )
         metaFile.newWriter()
         def draft = new Double (properties.platformDraftMeters)
         metaFile << "{\"shipname\":\"${properties.platformName}\",\"soundermake\":\"${properties.sounderMake}\",\"imonumber\":\"${properties.platformIMONumber}\""
@@ -37,7 +42,7 @@ class GeojsonOldToXyz {
         metaFile << ",\"lateralOffsetFromGPStoSonar\":\"${properties.sounderToGpsLateralOffsetMeters}\",\"velocity\":\"${properties.'soundSpeed_m/s'}\",\"gpsmake\":\"${properties.gpsMake}\",\"gpsmodel\":\"${properties.gpsModel}\",\"dataProvider\":\"Sea-ID\"}"
 
         //write out xyz
-        def xyzFile = new File( '/tmp/test.xyz' )
+        def xyzFile = new File( "${path}/${newFileNm}.xyz" )
         xyzFile.newWriter()
         xyzFile << "LAT, LON, DEPTH, TIME\n"
         features.each { f ->

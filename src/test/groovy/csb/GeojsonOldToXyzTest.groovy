@@ -9,6 +9,6 @@ class GeojsonOldToXyzTest {
 
     @Test
     void translateTest() {
-        assert GeojsonOldToXyz.translate('/home/geoneubie/repos/geojsonConverter/src/main/resources/0bb4aec1710521c12ee76289d9440817.geojson') == 30631
+        assert GeojsonOldToXyz.transform('/home/geoneubie/repos/geojsonConverter/src/main/resources/0bb4aec1710521c12ee76289d9440817.geojson') == 30631
     }
 }

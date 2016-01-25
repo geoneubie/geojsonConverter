@@ -1,35 +1,17 @@
 package csb
 
-import csb.model.DataProviders
-import csb.repos.IDataProviderRepository
-import csb.util.CsbUtil
+
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.annotation.ComponentScan
-import org.springframework.stereotype.Service
 
-@ComponentScan( basePackages=[ "csb.config"] )
-@Service
-class GeoJsonService implements ITransformService {
 
-    @Autowired
-    private IDataProviderRepository idpRepository
+class GeoJsonService {
 
-    @Autowired
-    private DataProviderService dpService
-
-    private DataProviders dps
 
     public GeoJsonService() {
 
     }
 
-    public GeoJsonService(DataProviders dps ) {
-
-        this.dps = dps
-
-    }
 
     String featureCollection() {
 
@@ -130,8 +112,6 @@ class GeoJsonService implements ITransformService {
 
     List<String> meta( Map cmiMap ) {
 
-        def dp = dps.getProvider( cmiMap.dataProvider )
-
         def metaJb = new JsonBuilder()
         def meta = metaJb {
             type "FeatureCollection"
@@ -149,15 +129,15 @@ class GeoJsonService implements ITransformService {
         def propJb = new JsonBuilder()
         metaProps << propJb {
             providerContactPoint {
-                orgName "${dp.name}"
-                hasEmail "${dp.providerEmail}"
-                orgUrl "${dp.providerUrl}"
+                orgName "Sea-ID"
+                hasEmail "support@sea-id.org"
+                orgUrl "https://www.sea-id.org"
             }
             processorContactPoint {
-                hasEmail "${dp.processorEmail}"
+                hasEmail "support@sea-id.org"
             }
             ownerContactPoint {
-                hasEmail "${dp.ownerEmail}"
+                hasEmail "support@sea-id.org"
             }
             depthUnits "meters"
             timeUnits "Epoch"
@@ -182,16 +162,21 @@ class GeoJsonService implements ITransformService {
         def t
         def tokens = []
         def pts = []
-
+        def nfeCount = 0
         while ( sc.hasNext() && i < 100 ) {
             String line = sc.nextLine()
             if (!skip) {
-                tokens = line.tokenize(',')
-                lon = Double.parseDouble(tokens[0]) //x
-                lat = Double.parseDouble(tokens[1]) //y
-                z = Double.parseDouble(tokens[2])
-                t = Double.parseDouble(tokens[3])
-                pts << [lat, lon, z, t]
+                try {
+                    tokens = line.tokenize(',')
+                    lon = Double.parseDouble(tokens[0]) //x
+                    lat = Double.parseDouble(tokens[1]) //y
+                    z = Double.parseDouble(tokens[2])
+                    t = Long.parseLong(tokens[3].trim()) //Assumes epochtime
+                    pts << [lat, lon, z, t]
+                } catch (NumberFormatException nfe) {
+                    println nfe
+                    nfeCount++ //in case you wanted to keep track
+                }
             } else {
                 // First line is a header, skip it and continue
                 skip = false
@@ -235,13 +220,12 @@ class GeoJsonService implements ITransformService {
     }
 
     Map transform( Map entries ) throws Exception {
-        this.dps = dpService.getAllDataProviders()
 
         def jsonSlurper = new JsonSlurper()
         def cmi = jsonSlurper.parseText( entries.JSON )
         List<String> metaListStr = this.meta( cmi )
 
-        def jsonFile = new File( "${entries.BASEFILENM}.json" )
+        def jsonFile = new File( "${entries.BASEFILENM}_new.json" )
         def xyzFile = new File( "${entries.BASEFILENM}.xyz" )
 
         Scanner sc = new Scanner( xyzFile )
