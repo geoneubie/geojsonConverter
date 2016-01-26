@@ -171,7 +171,7 @@ class GeoJsonService {
                     lon = Double.parseDouble(tokens[0]) //x
                     lat = Double.parseDouble(tokens[1]) //y
                     z = Double.parseDouble(tokens[2])
-                    t = Long.parseLong(tokens[3].trim()) //Assumes epochtime
+                    t = tokens[3].trim() //Assumes epochtime
                     pts << [lat, lon, z, t]
                 } catch (NumberFormatException nfe) {
                     println nfe
